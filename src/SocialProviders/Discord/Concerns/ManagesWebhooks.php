@@ -171,7 +171,9 @@ trait ManagesWebhooks
             );
         }
 
-        $response = $request->post($webhookUrl . '?wait=true');
+        // Properly append wait=true to URL
+        $separator = str_contains($webhookUrl, '?') ? '&' : '?';
+        $response = $request->post("{$webhookUrl}{$separator}wait=true");
 
         return $response->json() ?? ['error' => 'Webhook request failed'];
     }
