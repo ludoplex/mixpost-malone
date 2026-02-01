@@ -33,12 +33,14 @@ trait ManagesWebhooks
             $payload['embeds'] = $data['embeds'];
         }
 
-        // Thread ID (for forum channels)
+        // Build query string properly
+        $queryParams = ['wait' => 'true'];
         if (!empty($data['thread_id'])) {
-            $webhookUrl .= "?thread_id={$data['thread_id']}";
+            $queryParams['thread_id'] = $data['thread_id'];
         }
+        $queryString = http_build_query($queryParams);
 
-        $response = Http::post($webhookUrl . '?wait=true', $payload);
+        $response = Http::post("{$webhookUrl}?{$queryString}", $payload);
 
         return $response->json() ?? ['error' => 'Webhook request failed'];
     }

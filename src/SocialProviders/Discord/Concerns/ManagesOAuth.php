@@ -39,8 +39,17 @@ trait ManagesOAuth
     public function requestAccessToken(array $params = []): array
     {
         $code = $params['code'] ?? $this->request->get('code');
+        
+        // Validate state to prevent CSRF
+        $sessionState = $this->request->session()->get('state');
+        $returnedState = $params['state'] ?? $this->request->get('state');
+        if (!$sessionState || $sessionState !== $returnedState) {
+            return ['error' => 'Invalid state parameter'];
+        }
+        $this->request->session()->forget('state');
 
-        $response = Http::asForm()->post("{$this->apiBaseUrl}/oauth2/token", [
+        // Use OAuth2 endpoint (no /v10)
+        $response = Http::asForm()->post("https://discord.com/api/oauth2/token", [
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'code' => $code,
@@ -65,7 +74,7 @@ trait ManagesOAuth
     {
         $token = $this->getAccessToken();
 
-        $response = Http::asForm()->post("{$this->apiBaseUrl}/oauth2/token", [
+        $response = Http::asForm()->post("https://discord.com/api/oauth2/token", [
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'refresh_token' => $token['refresh_token'],
@@ -90,7 +99,7 @@ trait ManagesOAuth
     {
         $token = $this->getAccessToken();
 
-        $response = Http::asForm()->post("{$this->apiBaseUrl}/oauth2/token/revoke", [
+        $response = Http::asForm()->post("https://discord.com/api/oauth2/token/revoke", [
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'token' => $token['access_token'],

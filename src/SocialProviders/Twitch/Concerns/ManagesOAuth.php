@@ -40,6 +40,14 @@ trait ManagesOAuth
     public function requestAccessToken(array $params = []): array
     {
         $code = $params['code'] ?? $this->request->get('code');
+        
+        // Validate state to prevent CSRF
+        $sessionState = $this->request->session()->get('state');
+        $returnedState = $params['state'] ?? $this->request->get('state');
+        if (!$sessionState || $sessionState !== $returnedState) {
+            return ['error' => 'Invalid state parameter'];
+        }
+        $this->request->session()->forget('state');
 
         $response = Http::asForm()->post("{$this->oauthBaseUrl}/token", [
             'client_id' => $this->clientId,
