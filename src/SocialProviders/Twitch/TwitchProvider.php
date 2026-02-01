@@ -51,29 +51,6 @@ class TwitchProvider extends SocialProvider
     }
 
     /**
-     * Get authorization URL for OAuth flow
-     */
-    public function getAuthUrl(): string
-    {
-        $params = http_build_query([
-            'client_id' => $this->clientId,
-            'redirect_uri' => $this->redirectUrl,
-            'response_type' => 'code',
-            'scope' => implode(' ', [
-                'user:read:email',
-                'channel:read:stream_key',
-                'channel:manage:broadcast',
-                'chat:edit',
-                'chat:read',
-                'moderator:manage:announcements',
-            ]),
-            'state' => $this->request->session()->get('state'),
-        ]);
-
-        return "{$this->oauthBaseUrl}/authorize?{$params}";
-    }
-
-    /**
      * Make authenticated API request
      */
     protected function apiRequest(string $method, string $endpoint, array $data = []): array

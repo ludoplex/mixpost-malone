@@ -51,6 +51,8 @@ trait ManagesOAuth
         $sessionState = $this->request->session()->get('state');
         $returnedState = $params['state'] ?? $this->request->get('state');
         if (!$sessionState || $sessionState !== $returnedState) {
+            // Clean up session on error
+            $this->request->session()->forget(['state', 'code_verifier']);
             return ['error' => 'Invalid state parameter'];
         }
         $this->request->session()->forget('state');
@@ -66,12 +68,13 @@ trait ManagesOAuth
             'code_verifier' => $codeVerifier,
         ]);
 
+        // Always clean up code_verifier after use
+        $this->request->session()->forget('code_verifier');
+
         $data = $response->json();
 
         if (isset($data['access_token'])) {
             $data['expires_in'] = time() + ($data['expires_in'] ?? 86400);
-            // Clear code verifier
-            $this->request->session()->forget('code_verifier');
             return $data;
         }
 

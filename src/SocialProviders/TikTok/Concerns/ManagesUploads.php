@@ -7,6 +7,31 @@ use Illuminate\Support\Facades\Http;
 trait ManagesUploads
 {
     /**
+     * Validate URL is safe (prevent SSRF)
+     */
+    protected function isValidVideoUrl(string $url): bool
+    {
+        $parsed = parse_url($url);
+        
+        if (!$parsed || !isset($parsed['scheme']) || !isset($parsed['host'])) {
+            return false;
+        }
+        
+        // Only allow http/https
+        if (!in_array($parsed['scheme'], ['http', 'https'], true)) {
+            return false;
+        }
+        
+        // Block private/internal IPs
+        $ip = gethostbyname($parsed['host']);
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
      * Initialize video upload
      */
     protected function initVideoUpload(int $fileSize, int $chunkSize = 10485760): array
@@ -68,6 +93,13 @@ trait ManagesUploads
      */
     protected function postVideoFromUrl(array $data): array
     {
+        $videoUrl = $data['video_url'] ?? '';
+        
+        // Validate URL to prevent SSRF
+        if (!$this->isValidVideoUrl($videoUrl)) {
+            return ['error' => 'Invalid or disallowed video URL'];
+        }
+
         $response = $this->apiRequest('post', 'post/publish/video/init/', [], [
             'post_info' => [
                 'title' => $data['caption'] ?? '',
@@ -79,7 +111,7 @@ trait ManagesUploads
             ],
             'source_info' => [
                 'source' => 'PULL_FROM_URL',
-                'video_url' => $data['video_url'],
+                'video_url' => $videoUrl,
             ],
         ]);
 
@@ -91,7 +123,11 @@ trait ManagesUploads
      */
     protected function postVideoFromFile(array $data): array
     {
-        $videoPath = $data['video_path'];
+        $videoPath = $data['video_path'] ?? null;
+        if (!$videoPath || !file_exists($videoPath)) {
+            return ['error' => 'Video file not found'];
+        }
+
         $fileSize = filesize($videoPath);
         $chunkSize = 10485760; // 10MB chunks
 
@@ -120,36 +156,41 @@ trait ManagesUploads
         $uploadUrl = $initResponse['data']['upload_url'];
         $publishId = $initResponse['data']['publish_id'];
 
-        // Upload file in chunks
+        // Upload file in chunks with proper resource cleanup
         $handle = fopen($videoPath, 'rb');
-        $offset = 0;
-
-        while (!feof($handle)) {
-            $chunk = fread($handle, $chunkSize);
-            $chunkLength = strlen($chunk);
-            $endByte = $offset + $chunkLength - 1;
-
-            $response = Http::withHeaders([
-                'Content-Type' => 'video/mp4',
-                'Content-Length' => $chunkLength,
-                'Content-Range' => "bytes {$offset}-{$endByte}/{$fileSize}",
-            ])->withBody($chunk, 'video/mp4')->put($uploadUrl);
-
-            if (!$response->successful() && $response->status() !== 308) {
-                fclose($handle);
-                return ['error' => 'Chunk upload failed', 'details' => $response->json()];
-            }
-
-            $offset = $endByte + 1;
+        if (!$handle) {
+            return ['error' => 'Failed to open video file'];
         }
 
-        fclose($handle);
+        try {
+            $offset = 0;
 
-        return [
-            'data' => [
-                'publish_id' => $publishId,
-            ],
-        ];
+            while (!feof($handle)) {
+                $chunk = fread($handle, $chunkSize);
+                $chunkLength = strlen($chunk);
+                $endByte = $offset + $chunkLength - 1;
+
+                $response = Http::withHeaders([
+                    'Content-Type' => 'video/mp4',
+                    'Content-Length' => $chunkLength,
+                    'Content-Range' => "bytes {$offset}-{$endByte}/{$fileSize}",
+                ])->withBody($chunk, 'video/mp4')->put($uploadUrl);
+
+                if (!$response->successful() && $response->status() !== 308) {
+                    return ['error' => 'Chunk upload failed', 'details' => $response->json()];
+                }
+
+                $offset = $endByte + 1;
+            }
+
+            return [
+                'data' => [
+                    'publish_id' => $publishId,
+                ],
+            ];
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**

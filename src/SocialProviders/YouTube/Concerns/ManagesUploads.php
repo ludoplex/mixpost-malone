@@ -7,6 +7,31 @@ use Illuminate\Support\Facades\Http;
 trait ManagesUploads
 {
     /**
+     * Validate URL is safe (prevent SSRF)
+     */
+    protected function isValidVideoUrl(string $url): bool
+    {
+        $parsed = parse_url($url);
+        
+        if (!$parsed || !isset($parsed['scheme']) || !isset($parsed['host'])) {
+            return false;
+        }
+        
+        // Only allow http/https
+        if (!in_array($parsed['scheme'], ['http', 'https'], true)) {
+            return false;
+        }
+        
+        // Block private/internal IPs
+        $ip = gethostbyname($parsed['host']);
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
      * Upload a video to YouTube
      */
     public function uploadVideo(array $data): array
@@ -33,12 +58,27 @@ trait ManagesUploads
             $metadata['status']['publishAt'] = $data['publish_at'];
         }
 
-        // Get video content
+        // Get video content - prefer chunked upload for large files
         $videoContent = null;
+        
         if (!empty($data['video_path']) && file_exists($data['video_path'])) {
+            // For large files, use chunked upload instead
+            $fileSize = filesize($data['video_path']);
+            if ($fileSize > 100 * 1024 * 1024) { // > 100MB
+                return $this->uploadVideoChunked($data);
+            }
             $videoContent = file_get_contents($data['video_path']);
         } elseif (!empty($data['video_url'])) {
-            $videoContent = file_get_contents($data['video_url']);
+            // Validate URL to prevent SSRF
+            if (!$this->isValidVideoUrl($data['video_url'])) {
+                return ['error' => 'Invalid or disallowed video URL'];
+            }
+            // Use HTTP client instead of file_get_contents for better error handling
+            $response = Http::timeout(300)->get($data['video_url']);
+            if (!$response->successful()) {
+                return ['error' => 'Failed to fetch video from URL', 'status' => $response->status()];
+            }
+            $videoContent = $response->body();
         }
 
         if (!$videoContent) {
@@ -113,8 +153,8 @@ trait ManagesUploads
     {
         $token = $this->getAccessToken();
 
-        $videoPath = $data['video_path'];
-        if (!file_exists($videoPath)) {
+        $videoPath = $data['video_path'] ?? null;
+        if (!$videoPath || !file_exists($videoPath)) {
             return ['error' => 'Video file not found'];
         }
 
@@ -147,43 +187,48 @@ trait ManagesUploads
             return ['error' => 'Failed to initiate chunked upload'];
         }
 
-        // Upload in chunks
+        // Upload in chunks with proper resource cleanup
         $handle = fopen($videoPath, 'rb');
-        $offset = 0;
-
-        while (!feof($handle)) {
-            $chunk = fread($handle, $chunkSize);
-            $chunkLength = strlen($chunk);
-            $endByte = $offset + $chunkLength - 1;
-
-            $response = Http::withHeaders([
-                'Authorization' => "Bearer {$token['access_token']}",
-                'Content-Type' => 'video/*',
-                'Content-Length' => $chunkLength,
-                'Content-Range' => "bytes {$offset}-{$endByte}/{$fileSize}",
-            ])->withBody($chunk, 'video/*')->put($uploadUrl);
-
-            if ($response->status() === 200 || $response->status() === 201) {
-                // Upload complete
-                fclose($handle);
-                $result = $response->json();
-
-                if (!empty($data['thumbnail_path'])) {
-                    $this->uploadThumbnail($result['id'], $data['thumbnail_path']);
-                }
-
-                return $result;
-            } elseif ($response->status() === 308) {
-                // Resume incomplete, continue
-                $offset = $endByte + 1;
-            } else {
-                fclose($handle);
-                return ['error' => 'Chunk upload failed', 'details' => $response->json()];
-            }
+        if (!$handle) {
+            return ['error' => 'Failed to open video file'];
         }
 
-        fclose($handle);
-        return ['error' => 'Upload incomplete'];
+        try {
+            $offset = 0;
+
+            while (!feof($handle)) {
+                $chunk = fread($handle, $chunkSize);
+                $chunkLength = strlen($chunk);
+                $endByte = $offset + $chunkLength - 1;
+
+                $response = Http::withHeaders([
+                    'Authorization' => "Bearer {$token['access_token']}",
+                    'Content-Type' => 'video/*',
+                    'Content-Length' => $chunkLength,
+                    'Content-Range' => "bytes {$offset}-{$endByte}/{$fileSize}",
+                ])->withBody($chunk, 'video/*')->put($uploadUrl);
+
+                if ($response->status() === 200 || $response->status() === 201) {
+                    // Upload complete
+                    $result = $response->json();
+
+                    if (!empty($data['thumbnail_path'])) {
+                        $this->uploadThumbnail($result['id'], $data['thumbnail_path']);
+                    }
+
+                    return $result;
+                } elseif ($response->status() === 308) {
+                    // Resume incomplete, continue
+                    $offset = $endByte + 1;
+                } else {
+                    return ['error' => 'Chunk upload failed', 'details' => $response->json()];
+                }
+            }
+
+            return ['error' => 'Upload incomplete'];
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**

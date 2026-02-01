@@ -7,10 +7,44 @@ use Illuminate\Support\Facades\Http;
 trait ManagesWebhooks
 {
     /**
+     * Validate Discord webhook URL to prevent SSRF
+     */
+    protected function isValidWebhookUrl(string $url): bool
+    {
+        $parsed = parse_url($url);
+        
+        if (!$parsed || !isset($parsed['scheme']) || !isset($parsed['host'])) {
+            return false;
+        }
+        
+        // Only allow https
+        if ($parsed['scheme'] !== 'https') {
+            return false;
+        }
+        
+        // Only allow Discord domains
+        $allowedHosts = ['discord.com', 'discordapp.com', 'ptb.discord.com', 'canary.discord.com'];
+        if (!in_array($parsed['host'], $allowedHosts, true)) {
+            return false;
+        }
+        
+        // Must be a webhook path
+        if (!isset($parsed['path']) || !str_starts_with($parsed['path'], '/api/webhooks/')) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
      * Send message via webhook (no bot required)
      */
     public function sendWebhook(string $webhookUrl, array $data): array
     {
+        // Validate webhook URL
+        if (!$this->isValidWebhookUrl($webhookUrl)) {
+            return ['error' => 'Invalid Discord webhook URL'];
+        }
         $payload = [];
 
         // Content
@@ -50,6 +84,9 @@ trait ManagesWebhooks
      */
     public function editWebhookMessage(string $webhookUrl, string $messageId, array $data): array
     {
+        if (!$this->isValidWebhookUrl($webhookUrl)) {
+            return ['error' => 'Invalid Discord webhook URL'];
+        }
         $response = Http::patch("{$webhookUrl}/messages/{$messageId}", $data);
         return $response->json() ?? [];
     }
@@ -59,6 +96,9 @@ trait ManagesWebhooks
      */
     public function deleteWebhookMessage(string $webhookUrl, string $messageId): bool
     {
+        if (!$this->isValidWebhookUrl($webhookUrl)) {
+            return false;
+        }
         $response = Http::delete("{$webhookUrl}/messages/{$messageId}");
         return $response->successful();
     }
@@ -98,8 +138,15 @@ trait ManagesWebhooks
      */
     public function deleteWebhook(string $webhookId): bool
     {
+        $token = $this->getAccessToken();
+        $botToken = $token['bot_token'] ?? null;
+        
+        if (!$botToken) {
+            return false;
+        }
+
         $response = Http::withHeaders([
-            'Authorization' => "Bot {$this->getAccessToken()['bot_token']}",
+            'Authorization' => "Bot {$botToken}",
         ])->delete("{$this->apiBaseUrl}/webhooks/{$webhookId}");
 
         return $response->successful();
@@ -157,6 +204,10 @@ trait ManagesWebhooks
      */
     public function sendWebhookWithFiles(string $webhookUrl, array $data, array $files): array
     {
+        if (!$this->isValidWebhookUrl($webhookUrl)) {
+            return ['error' => 'Invalid Discord webhook URL'];
+        }
+
         $request = Http::asMultipart();
 
         // Add payload as JSON

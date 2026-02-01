@@ -70,9 +70,15 @@ class DiscordProvider extends SocialProvider
     {
         $token = $this->getAccessToken();
         
-        $authHeader = $useBot 
-            ? "Bot {$token['bot_token']}" 
-            : "Bearer {$token['access_token']}";
+        if ($useBot) {
+            $botToken = $token['bot_token'] ?? null;
+            if (!$botToken) {
+                return ['error' => 'Bot token not configured. Please add a bot token in the service settings.'];
+            }
+            $authHeader = "Bot {$botToken}";
+        } else {
+            $authHeader = "Bearer {$token['access_token']}";
+        }
 
         $request = Http::withHeaders([
             'Authorization' => $authHeader,
@@ -81,7 +87,14 @@ class DiscordProvider extends SocialProvider
 
         $response = $request->{$method}("{$this->apiBaseUrl}/{$endpoint}", $data);
 
-        return $response->json() ?? [];
+        $result = $response->json() ?? [];
+        
+        // Check for API errors
+        if (isset($result['code']) && isset($result['message'])) {
+            return ['error' => $result['message'], 'code' => $result['code']];
+        }
+
+        return $result;
     }
 
     /**
@@ -133,8 +146,15 @@ class DiscordProvider extends SocialProvider
      */
     public function deleteMessage(string $channelId, string $messageId): bool
     {
+        $token = $this->getAccessToken();
+        $botToken = $token['bot_token'] ?? null;
+        
+        if (!$botToken) {
+            return false;
+        }
+
         $response = Http::withHeaders([
-            'Authorization' => "Bot {$this->getAccessToken()['bot_token']}",
+            'Authorization' => "Bot {$botToken}",
         ])->delete("{$this->apiBaseUrl}/channels/{$channelId}/messages/{$messageId}");
 
         return $response->successful();

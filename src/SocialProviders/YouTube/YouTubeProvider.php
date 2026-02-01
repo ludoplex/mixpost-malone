@@ -87,7 +87,12 @@ class YouTubeProvider extends SocialProvider
             'mine' => 'true',
         ]);
 
-        return $response['items'][0] ?? [];
+        // Check for API errors
+        if (isset($response['error'])) {
+            return ['error' => $response['error']['message'] ?? 'Unknown API error'];
+        }
+
+        return $response['items'][0] ?? ['error' => 'No channel found'];
     }
 
     /**
