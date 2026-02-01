@@ -9,6 +9,7 @@ use Inovector\Mixpost\SocialProviders\Twitter\TwitterProvider;
 use Inovector\Mixpost\SocialProviders\Mastodon\MastodonProvider;
 use Inovector\Mixpost\SocialProviders\Twitch\TwitchProvider;
 use Inovector\Mixpost\SocialProviders\Whatnot\WhatnotProvider;
+use Inovector\Mixpost\SocialProviders\Discord\DiscordProvider;
 
 class SocialProviderManager extends SocialProviderManagerAbstract
 {
@@ -26,6 +27,7 @@ class SocialProviderManager extends SocialProviderManagerAbstract
             'mastodon' => MastodonProvider::class,
             'twitch' => TwitchProvider::class,
             'whatnot' => WhatnotProvider::class,
+            'discord' => DiscordProvider::class,
         ];
     }
 
@@ -87,5 +89,14 @@ class SocialProviderManager extends SocialProviderManagerAbstract
         $config['redirect'] = route('mixpost.callbackSocialProvider', ['provider' => 'whatnot']);
 
         return $this->buildConnectionProvider(WhatnotProvider::class, $config);
+    }
+
+    protected function connectDiscordProvider()
+    {
+        $config = ServiceManager::get('discord', 'configuration');
+
+        $config['redirect'] = route('mixpost.callbackSocialProvider', ['provider' => 'discord']);
+
+        return $this->buildConnectionProvider(DiscordProvider::class, $config);
     }
 }
