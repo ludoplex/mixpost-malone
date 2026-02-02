@@ -7,6 +7,11 @@ use Inovector\Mixpost\Facades\ServiceManager;
 use Inovector\Mixpost\SocialProviders\Meta\FacebookPageProvider;
 use Inovector\Mixpost\SocialProviders\Twitter\TwitterProvider;
 use Inovector\Mixpost\SocialProviders\Mastodon\MastodonProvider;
+use Inovector\Mixpost\SocialProviders\Twitch\TwitchProvider;
+use Inovector\Mixpost\SocialProviders\Whatnot\WhatnotProvider;
+use Inovector\Mixpost\SocialProviders\Discord\DiscordProvider;
+use Inovector\Mixpost\SocialProviders\YouTube\YouTubeProvider;
+use Inovector\Mixpost\SocialProviders\TikTok\TikTokProvider;
 
 class SocialProviderManager extends SocialProviderManagerAbstract
 {
@@ -22,6 +27,11 @@ class SocialProviderManager extends SocialProviderManagerAbstract
             'twitter' => TwitterProvider::class,
             'facebook_page' => FacebookPageProvider::class,
             'mastodon' => MastodonProvider::class,
+            'twitch' => TwitchProvider::class,
+            'whatnot' => WhatnotProvider::class,
+            'discord' => DiscordProvider::class,
+            'youtube' => YouTubeProvider::class,
+            'tiktok' => TikTokProvider::class,
         ];
     }
 
@@ -65,5 +75,50 @@ class SocialProviderManager extends SocialProviderManagerAbstract
         ];
 
         return $this->buildConnectionProvider(MastodonProvider::class, $config);
+    }
+
+    protected function connectTwitchProvider()
+    {
+        $config = ServiceManager::get('twitch', 'configuration');
+
+        $config['redirect'] = route('mixpost.callbackSocialProvider', ['provider' => 'twitch']);
+
+        return $this->buildConnectionProvider(TwitchProvider::class, $config);
+    }
+
+    protected function connectWhatnotProvider()
+    {
+        $config = ServiceManager::get('whatnot', 'configuration');
+
+        $config['redirect'] = route('mixpost.callbackSocialProvider', ['provider' => 'whatnot']);
+
+        return $this->buildConnectionProvider(WhatnotProvider::class, $config);
+    }
+
+    protected function connectDiscordProvider()
+    {
+        $config = ServiceManager::get('discord', 'configuration');
+
+        $config['redirect'] = route('mixpost.callbackSocialProvider', ['provider' => 'discord']);
+
+        return $this->buildConnectionProvider(DiscordProvider::class, $config);
+    }
+
+    protected function connectYoutubeProvider()
+    {
+        $config = ServiceManager::get('youtube', 'configuration');
+
+        $config['redirect'] = route('mixpost.callbackSocialProvider', ['provider' => 'youtube']);
+
+        return $this->buildConnectionProvider(YouTubeProvider::class, $config);
+    }
+
+    protected function connectTiktokProvider()
+    {
+        $config = ServiceManager::get('tiktok', 'configuration');
+
+        $config['redirect'] = route('mixpost.callbackSocialProvider', ['provider' => 'tiktok']);
+
+        return $this->buildConnectionProvider(TikTokProvider::class, $config);
     }
 }
