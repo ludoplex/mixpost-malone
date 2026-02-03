@@ -1,29 +1,26 @@
-{
-  "name": "MixPost Malone Dev",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspace",
-  "forwardPorts": [8000, 3306, 6379],
+﻿{
+  "name": "MixPost Malone Direct",
+  "image": "mcr.microsoft.com/devcontainers/php:8.2",
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {},
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "forwardPorts": [8000],
   "portsAttributes": {
     "8000": {
       "label": "MixPost App",
-      "onAutoForward": "notify"
+      "onAutoForward": "openBrowser"
     }
   },
+  "postCreateCommand": "cp .env.example .env && composer install && php artisan key:generate",
+  "postStartCommand": "php artisan serve --host=0.0.0.0 --port=8000 &",
   "customizations": {
     "vscode": {
       "extensions": [
         "bmewburn.vscode-intelephense-client",
-        "xdebug.php-debug",
         "onecentlin.laravel-blade",
-        "mikestead.dotenv",
-        "EditorConfig.EditorConfig"
-      ],
-      "settings": {
-        "php.validate.executablePath": "/usr/bin/php"
-      }
+        "mikestead.dotenv"
+      ]
     }
-  },
-  "postCreateCommand": "bash .devcontainer/post-create.sh",
-  "remoteUser": "vscode"
+  }
 }
