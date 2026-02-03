@@ -3,14 +3,16 @@
 namespace Inovector\Mixpost\Services;
 
 use Inovector\Mixpost\Abstracts\Service;
+use Inovector\Mixpost\Enums\ServiceGroup;
 
 class TwitchService extends Service
 {
-    public static string $name = 'twitch';
+    public static function group(): ServiceGroup
+    {
+        return ServiceGroup::SOCIAL;
+    }
 
-    public static string $label = 'Twitch';
-
-    public static function credentials(): array
+    public static function form(): array
     {
         return [
             'client_id' => '',
@@ -18,44 +20,19 @@ class TwitchService extends Service
         ];
     }
 
-    public static function credentialsForm(): array
+    public static function formRules(): array
     {
         return [
-            'client_id' => [
-                'label' => 'Client ID',
-                'type' => 'text',
-                'description' => 'Get this from your Twitch Developer Console',
-                'placeholder' => 'Enter your Twitch Client ID',
-            ],
-            'client_secret' => [
-                'label' => 'Client Secret',
-                'type' => 'password',
-                'description' => 'Get this from your Twitch Developer Console',
-                'placeholder' => 'Enter your Twitch Client Secret',
-            ],
+            'client_id' => ['required'],
+            'client_secret' => ['required'],
         ];
     }
 
-    public static function documentation(): string
+    public static function formMessages(): array
     {
-        return <<<HTML
-<div>
-    <h4>Twitch Setup Instructions</h4>
-    <ol>
-        <li>Go to <a href="https://dev.twitch.tv/console" target="_blank">Twitch Developer Console</a></li>
-        <li>Click "Register Your Application"</li>
-        <li>Fill in the application details:
-            <ul>
-                <li>Name: Your app name (e.g., "MixPost Integration")</li>
-                <li>OAuth Redirect URL: <code>{callback_url}</code></li>
-                <li>Category: Choose appropriate category</li>
-            </ul>
-        </li>
-        <li>Click "Create" and copy the Client ID</li>
-        <li>Click "New Secret" to generate a Client Secret</li>
-        <li>Enter both values above</li>
-    </ol>
-</div>
-HTML;
+        return [
+            'client_id' => 'The Client ID is required.',
+            'client_secret' => 'The Client Secret is required.',
+        ];
     }
 }
