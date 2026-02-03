@@ -4,6 +4,7 @@ namespace Inovector\Mixpost\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 use Inovector\Mixpost\Casts\AccountMediaCast;
 use Inovector\Mixpost\Casts\EncryptArrayObject;
@@ -21,6 +22,7 @@ class Account extends Model
     protected $table = 'mixpost_accounts';
 
     protected $fillable = [
+        'entity_id',
         'name',
         'username',
         'media',
@@ -57,6 +59,11 @@ class Account extends Model
                 Storage::disk($account->media['disk'])->delete($account->media['path']);
             }
         });
+    }
+
+    public function entity(): BelongsTo
+    {
+        return $this->belongsTo(Entity::class, 'entity_id');
     }
 
     public function image(): ?string

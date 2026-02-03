@@ -21,6 +21,12 @@ class AccountResource extends JsonResource
             'post_configs' => $this->postConfigs(),
             'data' => $this->data,
             'authorized' => $this->authorized,
+            'entity_id' => $this->entity_id,
+            'entity' => $this->whenLoaded('entity', fn() => [
+                'id' => $this->entity->id,
+                'name' => $this->entity->name,
+                'hex_color' => $this->entity->hex_color,
+            ]),
             'created_at' => $this->created_at->diffForHumans(),
             'external_url' => $this->whenPivotLoaded('mixpost_post_accounts', function () {
                 if (!$this->pivot->provider_post_id) {

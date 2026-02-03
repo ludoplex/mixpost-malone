@@ -13,6 +13,7 @@ import PhotoIcon from "@/Icons/Photo.vue"
 import ShareIcon from "@/Icons/Share.vue"
 import CogIcon from "@/Icons/Cog.vue"
 import ServerStackIcon from "@/Icons/ServerStack.vue"
+import RectangleGroupIcon from "@/Icons/RectangleGroup.vue"
 import UserMenu from "../Navigation/UserMenu.vue";
 import QueueList from "../../Icons/QueueList.vue";
 import InformationCircle from "../../Icons/InformationCircle.vue";
@@ -86,6 +87,12 @@ import UpgradePro from "../Pro/UpgradePro.vue";
                         <ShareIcon/>
                     </template>
                     Social Accounts
+                </MenuItem>
+                <MenuItem :url="route('mixpost.entities.index')" :active="$page.component === 'Entities'">
+                    <template #icon>
+                        <RectangleGroupIcon/>
+                    </template>
+                    Entities
                 </MenuItem>
                 <MenuItem :url="route('mixpost.services.index')" :active="$page.component === 'Services'">
                     <template #icon>

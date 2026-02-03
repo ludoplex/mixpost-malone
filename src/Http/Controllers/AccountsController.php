@@ -13,6 +13,8 @@ use Inovector\Mixpost\Enums\ServiceGroup;
 use Inovector\Mixpost\Facades\ServiceManager;
 use Inovector\Mixpost\Http\Resources\AccountResource;
 use Inovector\Mixpost\Models\Account;
+use Inovector\Mixpost\Models\Entity;
+use Inovector\Mixpost\Http\Resources\EntityResource;
 
 class AccountsController extends Controller
 {
@@ -23,7 +25,8 @@ class AccountsController extends Controller
         $socialServices = ServiceManager::services()->group(ServiceGroup::SOCIAL)->getNames();
 
         return Inertia::render('Accounts/Accounts', [
-            'accounts' => AccountResource::collection(Account::latest()->get())->resolve(),
+            'accounts' => AccountResource::collection(Account::with('entity')->latest()->get())->resolve(),
+            'entities' => EntityResource::collection(Entity::orderBy('sort_order')->get())->resolve(),
             'is_configured_service' => ServiceManager::isConfigured($socialServices),
             'is_service_active' => ServiceManager::isActive($socialServices),
         ]);
@@ -33,6 +36,17 @@ class AccountsController extends Controller
     {
         $account = Account::firstOrFailByUuid($request->route('account'));
 
+        // Handle entity assignment
+        if ($request->has('entity_id')) {
+            $request->validate([
+                'entity_id' => ['nullable', 'exists:mixpost_entities,id'],
+            ]);
+            
+            $account->update(['entity_id' => $request->input('entity_id')]);
+            return redirect()->back()->with('success', 'Account entity updated.');
+        }
+
+        // Handle account refresh from provider
         $connection = $this->connectProvider($account);
 
         $response = $connection->getAccount();

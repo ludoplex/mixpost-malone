@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Inovector\Mixpost\Http\Controllers\AccountEntitiesController;
+use Inovector\Mixpost\Http\Controllers\EntitiesController;
 use Inovector\Mixpost\Http\Controllers\AccountsController;
 use Inovector\Mixpost\Http\Controllers\AddAccountController;
 use Inovector\Mixpost\Http\Controllers\AuthenticatedController;
@@ -89,6 +90,14 @@ Route::middleware([
             Route::post('/', [TagsController::class, 'store'])->name('store');
             Route::put('{tag}', [TagsController::class, 'update'])->name('update');
             Route::delete('{tag}', [TagsController::class, 'destroy'])->name('delete');
+        });
+
+        Route::prefix('entities')->name('entities.')->group(function () {
+            Route::get('/', [EntitiesController::class, 'index'])->name('index');
+            Route::post('/', [EntitiesController::class, 'store'])->name('store');
+            Route::put('{entity}', [EntitiesController::class, 'update'])->name('update');
+            Route::delete('{entity}', [EntitiesController::class, 'destroy'])->name('destroy');
+            Route::post('reorder', [EntitiesController::class, 'reorder'])->name('reorder');
         });
 
         Route::prefix('settings')->name('settings.')->group(function () {
