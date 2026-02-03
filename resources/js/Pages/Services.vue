@@ -47,7 +47,6 @@ const tab = ref('facebook');
                     <template #icon>
                         <ProviderIcon provider="facebook"/>
                     </template>
-
                     Facebook
                 </Tab>
 
@@ -58,14 +57,14 @@ const tab = ref('facebook');
                     X
                 </Tab>
 
-                <Tab @click="tab = 'youtube'" :active="tab === 'youtube'">
+                <Tab @click="tab = 'you_tube'" :active="tab === 'you_tube'">
                     <template #icon>
                         <YouTubeIcon class="text-[#FF0000]"/>
                     </template>
                     YouTube
                 </Tab>
 
-                <Tab @click="tab = 'tiktok'" :active="tab === 'tiktok'">
+                <Tab @click="tab = 'tik_tok'" :active="tab === 'tik_tok'">
                     <template #icon>
                         <TikTokIcon class="text-black"/>
                     </template>
@@ -118,12 +117,12 @@ const tab = ref('facebook');
                 <TwitterServiceForm :form="form.twitter"/>
             </template>
 
-            <template v-if="tab === 'youtube'">
-                <YouTubeServiceForm :form="form.youtube"/>
+            <template v-if="tab === 'you_tube'">
+                <YouTubeServiceForm :form="form.you_tube"/>
             </template>
 
-            <template v-if="tab === 'tiktok'">
-                <TikTokServiceForm :form="form.tiktok"/>
+            <template v-if="tab === 'tik_tok'">
+                <TikTokServiceForm :form="form.tik_tok"/>
             </template>
 
             <template v-if="tab === 'twitch'">
