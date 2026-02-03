@@ -7,11 +7,21 @@ import Tab from "@/Components/Navigation/Tab.vue"
 import ProviderIcon from "@/Components/Account/ProviderIcon.vue";
 import UnsplashIcon from "@/Icons/Unsplash.vue";
 import TenorIcon from "@/Icons/Tenor.vue";
+import DiscordIcon from "@/Icons/Discord.vue";
+import TikTokIcon from "@/Icons/TikTok.vue";
+import TwitchIcon from "@/Icons/Twitch.vue";
+import WhatnotIcon from "@/Icons/Whatnot.vue";
+import YouTubeIcon from "@/Icons/YouTube.vue";
 
 const TwitterServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/TwitterServiceForm.vue"));
 const FacebookServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/FacebookServiceForm.vue"));
 const UnsplashServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/UnsplashServiceForm.vue"));
 const TenorServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/TenorServiceForm.vue"));
+const DiscordServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/DiscordServiceForm.vue"));
+const TikTokServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/TikTokServiceForm.vue"));
+const TwitchServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/TwitchServiceForm.vue"));
+const WhatnotServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/WhatnotServiceForm.vue"));
+const YouTubeServiceForm = defineAsyncComponent(() => import("@/Components/ServiceForm/YouTubeServiceForm.vue"));
 
 const pageTitle = 'Third Party Services';
 
@@ -48,6 +58,41 @@ const tab = ref('facebook');
                     X
                 </Tab>
 
+                <Tab @click="tab = 'youtube'" :active="tab === 'youtube'">
+                    <template #icon>
+                        <YouTubeIcon class="text-[#FF0000]"/>
+                    </template>
+                    YouTube
+                </Tab>
+
+                <Tab @click="tab = 'tiktok'" :active="tab === 'tiktok'">
+                    <template #icon>
+                        <TikTokIcon class="text-black"/>
+                    </template>
+                    TikTok
+                </Tab>
+
+                <Tab @click="tab = 'twitch'" :active="tab === 'twitch'">
+                    <template #icon>
+                        <TwitchIcon class="text-[#9146FF]"/>
+                    </template>
+                    Twitch
+                </Tab>
+
+                <Tab @click="tab = 'discord'" :active="tab === 'discord'">
+                    <template #icon>
+                        <DiscordIcon class="text-[#5865F2]"/>
+                    </template>
+                    Discord
+                </Tab>
+
+                <Tab @click="tab = 'whatnot'" :active="tab === 'whatnot'">
+                    <template #icon>
+                        <WhatnotIcon class="text-[#7C3AED]"/>
+                    </template>
+                    Whatnot
+                </Tab>
+
                 <Tab @click="tab = 'unsplash'" :active="tab === 'unsplash'">
                     <template #icon>
                         <UnsplashIcon class="text-black"/>
@@ -71,6 +116,26 @@ const tab = ref('facebook');
 
             <template v-if="tab === 'twitter'">
                 <TwitterServiceForm :form="form.twitter"/>
+            </template>
+
+            <template v-if="tab === 'youtube'">
+                <YouTubeServiceForm :form="form.youtube"/>
+            </template>
+
+            <template v-if="tab === 'tiktok'">
+                <TikTokServiceForm :form="form.tiktok"/>
+            </template>
+
+            <template v-if="tab === 'twitch'">
+                <TwitchServiceForm :form="form.twitch"/>
+            </template>
+
+            <template v-if="tab === 'discord'">
+                <DiscordServiceForm :form="form.discord"/>
+            </template>
+
+            <template v-if="tab === 'whatnot'">
+                <WhatnotServiceForm :form="form.whatnot"/>
             </template>
 
             <template v-if="tab === 'unsplash'">
