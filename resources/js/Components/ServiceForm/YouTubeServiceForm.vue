@@ -28,7 +28,7 @@ const errors = ref({});
 const save = () => {
     errors.value = {};
 
-    router.put(route('mixpost.services.update', {service: 'you_tube'}), props.form, {
+    router.put(route('mixpost.services.update', {service: 'youtube'}), props.form, {
         preserveScroll: true,
         onSuccess() {
             notify('success', 'YouTube service has been saved');
