@@ -11,10 +11,15 @@ use Illuminate\Support\Str;
 use Inovector\Mixpost\Collection\ServiceCollection;
 use Inovector\Mixpost\Exceptions\ServiceNotRegistered;
 use Inovector\Mixpost\Models\Service as ServiceModel;
+use Inovector\Mixpost\Services\DiscordService;
 use Inovector\Mixpost\Services\FacebookService;
 use Inovector\Mixpost\Services\TenorService;
+use Inovector\Mixpost\Services\TikTokService;
+use Inovector\Mixpost\Services\TwitchService;
 use Inovector\Mixpost\Services\TwitterService;
 use Inovector\Mixpost\Services\UnsplashService;
+use Inovector\Mixpost\Services\WhatnotService;
+use Inovector\Mixpost\Services\YouTubeService;
 use Inovector\Mixpost\Support\Log;
 
 class ServiceManager
@@ -32,6 +37,11 @@ class ServiceManager
         return [
             FacebookService::class,
             TwitterService::class,
+            YouTubeService::class,
+            TikTokService::class,
+            TwitchService::class,
+            DiscordService::class,
+            WhatnotService::class,
             UnsplashService::class,
             TenorService::class,
         ];
@@ -134,8 +144,6 @@ class ServiceManager
 
     public function get(string $name, null|string $key = null)
     {
-        // Mastodon service is not exists. Each Mastodon server has its own configuration.
-        // Mastodon configuration is stored during connection process.
         $isMastodon = Str::startsWith($name, 'mastodon.');
 
         $defaultPayload = [
@@ -163,7 +171,6 @@ class ServiceManager
             }
         });
 
-        // Decrypt the configuration from the cache
         if (!is_array($value['configuration'] ?? [])) {
             try {
                 $value = array_merge($value, [
